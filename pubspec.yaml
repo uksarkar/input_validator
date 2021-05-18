@@ -1,7 +1,6 @@
 name: input_validator
 description: Form validation made easy.
-version: 0.0.1
-author: Utpal Sarkar
+version: 0.0.2
 homepage: https://github.com/uksarkar/input_validator
 
 environment:

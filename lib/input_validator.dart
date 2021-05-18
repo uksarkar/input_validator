@@ -1,5 +1,9 @@
 library input_validator;
 
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
 class InputValidator {
   final bool multiErrors;
   final dynamic? value;
@@ -52,7 +56,8 @@ class InputValidator {
 
   String? _getMsg(String key, {dynamic? replace}) {
     return _errorMessages.containsKey(key)
-        ? _errorMessages[key]?.replaceFirst(RegExp(":value"), "$replace")
+        ? _errorMessages[key]
+            ?.replaceFirst(RegExp(":value"), _toString(replace))
         : null;
   }
 
@@ -121,10 +126,9 @@ class InputValidator {
 
   ///
   String? _email() {
-    bool isValid = RegExp(
-            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
-        .hasMatch(value);
-    return isValid ? null : _getMsg("email");
+    RegExp regExp = RegExp(
+        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
+    return value != null && regExp.hasMatch(value) ? null : _getMsg("email");
   }
 
   ///
@@ -297,7 +301,148 @@ class InputValidator {
     return initiate.validate();
   }
 
+  static Widget form({
+    required BuildContext context,
+    required Widget Function(_FormState) child,
+    required Map<String, FieldData> fields,
+  }) {
+    final _FormState _formState = _FormState(data: fields);
+
+    return StreamBuilder(
+      stream: _formState.stream,
+      builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+        return child(_formState);
+      },
+    );
+  }
+
   /// end of the class
+}
+
+class _FormState {
+  final StreamController _controller = StreamController.broadcast();
+  final Map<String, FieldData> data;
+  String _state = "STABLE";
+
+  _FormState({required this.data});
+
+  Stream<dynamic> get stream => _controller.stream;
+
+  String get currentState => _state;
+
+  bool get hasError =>
+      data.values.map((e) => e.error).whereType<String>().isNotEmpty;
+
+  Map<String, dynamic> get formData =>
+      data.map((key, d) => MapEntry(key, d.value));
+
+  set setState(String value) {
+    _state = value;
+    _controller.sink.add("listen");
+  }
+
+  bool add(String field, dynamic value) {
+    if (data.containsKey(field)) {
+      var item = data[field];
+      if (item != null) {
+        item.setValue = value;
+        item.setError = InputValidator.make(
+          rules: item.rules,
+          messages: item.messages,
+          value: value,
+        );
+        _controller.sink.add("listen");
+
+        return item.error == null;
+      }
+    } else {
+      print("Invalid field name");
+    }
+    return false;
+  }
+
+  String? getError(String field) {
+    if (data.containsKey(field)) {
+      var item = data[field];
+      return item?.error;
+    }
+    return null;
+  }
+
+  void setError(String field, String? error) {
+    if (data.containsKey(field)) {
+      var item = data[field];
+      item?.setError = error;
+    }
+  }
+
+  String? checkField(String field) {
+    if (data.containsKey(field)) {
+      var item = data[field];
+      return item != null
+          ? InputValidator.make(
+              rules: item.rules,
+              messages: item.messages,
+              value: item.value,
+            )
+          : null;
+    }
+    return null;
+  }
+
+  void clearErrors() {
+    data.keys.forEach((k) {
+      var item = data[k];
+      item?.setError = null;
+    });
+    _controller.sink.add("listen");
+  }
+
+  bool validate() {
+    Map<String, FieldData> newData = data.map((k, v) {
+      var error = checkField(k);
+      return MapEntry(
+          k,
+          FieldData(
+            value: v.value,
+            rules: v.rules,
+            error: error,
+            messages: v.messages,
+          ));
+    });
+
+    bool isValid =
+        newData.values.map((e) => e.error).whereType<String>().isEmpty;
+
+    data.addAll(newData);
+
+    if (!isValid) {
+      _controller.sink.add("listen");
+    }
+
+    return isValid;
+  }
+
+  dispose() {
+    _controller.close();
+  }
+}
+
+class FieldData {
+  final String? rules;
+  final Map<String, dynamic>? messages;
+  dynamic? value;
+  String? error;
+
+  set setError(String? err) => error = err;
+  set setValue(dynamic? val) => value = val;
+
+  FieldData({this.error, this.messages, required this.rules, this.value});
+
+  @override
+  String toString() {
+    return '{rules: $rules, value: $value, error: $error}';
+  }
 }
 
 class CustomHandler {

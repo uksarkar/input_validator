@@ -20,15 +20,17 @@ The `make` method will return `null` if the validation passed.
     InputValidator.make(rules:"required|min_length:6",value:"password");
 ```
 
-\*Rules
+#### Rules
+
 rules parameter is a string that guide what to do with the value. You can provide as many as posable rules, which should be separated by `|` sign. Some rules required extra params like `rule:param,param`, here parameters are separated by comma. A quick example: you want to get user gender in male,female or other, so it would be like `in:male,female,other`. See [Available Validation Rules](#available-validation-rules) and explanation.
 
-\*Value
+#### Value
+
 The value is the given payload for validation.
 
 ## Customizing Validation Messages
 
-You can pass `messages` parameter to the make method. It accept `Map<String, dynamic>`. The messages key should match with rule name. The message value should be either `String` or [CustomHandler](#custom_rule).
+You can pass `messages` parameter to the make method. It accept `Map<String, dynamic>`. The messages key should match with rule name. The message value should be either `String` or [CustomHandler](#custom-rule).
 Example:
 
 ```dart
@@ -75,17 +77,17 @@ Below is a list of all available validation rules and their function:
 [Numeric (Number)](#numeric),
 [Size (Number)](#size),
 [Length (String)](#length),
-[Max Length (String)](#max_length),
-[Min Length (String)](#min_length),
+[Max Length (String)](#max-length),
+[Min Length (String)](#min-length),
 [Email](#email),
 [In](#in),
 [Date](#date),
-[Date Between](#date_between),
-[Date Before](#date_before),
-[Date After](#date_after),
-[Date Before Inclusive](#date_before_inclusive),
-[Date After Inclusive](#date_after_inclusive),
-[Custom Rule](#custom_rule),
+[Date Between](#date-between),
+[Date Before](#date-before),
+[Date After](#date-after),
+[Date Before Inclusive](#date-before-inclusive),
+[Date After Inclusive](#date-after-inclusive),
+[Custom Rule](#custom-rule),
 
 ### Required
 
@@ -166,7 +168,7 @@ InputValidator.make(value: "15", rules: "max_length:10");
 
 ### Email
 
-It will check with a RegEx pattern. You can customize the pattern by override the [custom handler](#custom_handler).
+It will check with a RegEx pattern. You can customize the pattern by override the [custom handler](#custom-rule).
 
 ```dart
 // example
@@ -206,7 +208,7 @@ InputValidator.make(value: "2021-04-10", rules: "date_between:2021-05-17,2021-07
 
 ### Date Before
 
-Valid date that could be parsed with `DateTime.parse()`. It will make sure that the given date is older then checking date. Also you can try [Date Before Inclusive](#date_before_inclusive).
+Valid date that could be parsed with `DateTime.parse()`. It will make sure that the given date is older then checking date. Also you can try [Date Before Inclusive](#date-before-inclusive).
 
 ```dart
 // example 'date_before:date'
@@ -216,7 +218,7 @@ InputValidator.make(value: "2021-04-10", rules: "date_between:2021-05-17");
 
 ### Date After
 
-Valid date that could be parsed with `DateTime.parse()`. It will make sure that the given date is newer then checking date. Also you can try [Date After Inclusive](#date_after_inclusive).
+Valid date that could be parsed with `DateTime.parse()`. It will make sure that the given date is newer then checking date. Also you can try [Date After Inclusive](#date-after-inclusive).
 
 ```dart
 // example 'date_after:date'
