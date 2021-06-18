@@ -1,4 +1,4 @@
-## [0.0.3] - 2021-06-11
+## [0.0.3] - 2021-06-18
 
 - Form builder updated
 - `form` method removed
