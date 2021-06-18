@@ -67,6 +67,23 @@ Here is an example of custom rule.
     );
 ```
 
+## Form builder
+
+Build form via form builder. See the full example on the example tab.
+```dart
+    var _form = InputValidator.builder(
+        fields: {
+                    "full_name": FieldData(rules: "required|min_length:4"),
+                    "username": FieldData(rules: "required|min_length:4"),
+                    "age": FieldData(rules: "required|min:10"),
+                },
+        );
+
+    Container(
+        child: _form.build(context, child: (state) => ....)
+    )
+```
+
 ## Available Validation Rules
 
 Below is a list of all available validation rules and their function:
