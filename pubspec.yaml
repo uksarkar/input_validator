@@ -1,6 +1,6 @@
 name: input_validator
-description: Form validation made easy.
-version: 0.0.2
+description: Form validation made easy. Validate input data in an elegant way. Easley handles big form with form builder.
+version: 0.0.3
 homepage: https://github.com/uksarkar/input_validator
 
 environment:
