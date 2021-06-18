@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Input Validator',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -36,119 +36,129 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  /// Initialize the form builder fields
+  final formBuilder = InputValidator.builder(fields: {
+    "full_name": FieldData(rules: "required|min_length:4"),
+    "email": FieldData(rules: "required|email"),
+    "password": FieldData(
+      rules: "required|min_length:6|max_length:16|strong",
+      messages: {
+        "strong": CustomHandler(
+          onHandle: (payload, _) {
+            String p =
+                r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
+            return payload != null && RegExp(p).hasMatch(payload)
+                ? null
+                : "Uppercase, Lowercase, Number and Symbles.";
+          },
+        ),
+      },
+    ),
+    "username": FieldData(rules: "required|min_length:4"),
+  });
+
+  @override
+  void dispose() {
+    /// dispose the form builder's stream
+    formBuilder.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Input Validator"),
+        title: Text("Input Validator Demo"),
       ),
-      body: InputValidator.form(
-          context: context,
-          child: (formState) {
-            return Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          onChanged: (value) async {
-                            if (formState.add("username", value)) {
-                              formState.setState = "CHECKING_USERNAME";
-                              var isValid = await checkUsername(value);
-                              if (!isValid) {
-                                formState.setError(
-                                    "username", "Username not available.");
-                              } else {
-                                formState.setError("username", null);
-                              }
-                              formState.setState = "STABLE";
+      body: formBuilder.build(
+        context: context,
+        child: (formState) {
+          return Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        onChanged: (value) async {
+                          if (formState.add("username", value)) {
+                            formState.setState = "CHECKING_USERNAME";
+                            var isValid = await checkUsername(value);
+                            if (!isValid) {
+                              formState.setError(
+                                  "username", "Username not available.");
+                            } else {
+                              formState.setError("username", null);
                             }
-                          },
-                          decoration: InputDecoration(
-                            icon: Icon(Icons.person),
-                            labelText: "Username",
-                            errorText: formState.getError("username"),
-                          ),
+                            formState.setState = "STABLE";
+                          }
+                        },
+                        decoration: InputDecoration(
+                          icon: Icon(Icons.person),
+                          labelText: "Username",
+                          errorText: formState.getError("username"),
                         ),
                       ),
-                      if (formState.currentState == "CHECKING_USERNAME")
-                        CircularProgressIndicator()
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: TextField(
-                    onChanged: (value) => formState.add("full_name", value),
-                    decoration: InputDecoration(
-                      icon: Icon(Icons.edit),
-                      labelText: "Full Name",
-                      errorText: formState.getError("full_name"),
                     ),
+                    if (formState.currentState == "CHECKING_USERNAME")
+                      CircularProgressIndicator()
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: TextField(
+                  onChanged: (value) => formState.add("full_name", value),
+                  decoration: InputDecoration(
+                    icon: Icon(Icons.edit),
+                    labelText: "Full Name",
+                    errorText: formState.getError("full_name"),
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: TextField(
-                    onChanged: (value) => formState.add("email", value),
-                    decoration: InputDecoration(
-                      icon: Icon(Icons.email),
-                      labelText: "Email",
-                      errorText: formState.getError("email"),
-                    ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: TextField(
+                  onChanged: (value) => formState.add("email", value),
+                  decoration: InputDecoration(
+                    icon: Icon(Icons.email),
+                    labelText: "Email",
+                    errorText: formState.getError("email"),
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: TextField(
-                    onChanged: (value) => formState.add("password", value),
-                    decoration: InputDecoration(
-                      icon: Icon(Icons.lock_open),
-                      labelText: "Password",
-                      errorText: formState.getError("password"),
-                    ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: TextField(
+                  onChanged: (value) => formState.add("password", value),
+                  decoration: InputDecoration(
+                    icon: Icon(Icons.lock_open),
+                    labelText: "Password",
+                    errorText: formState.getError("password"),
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: ElevatedButton(
-                    onPressed: !formState.hasError &&
-                            formState.currentState != "CHECKING_USERNAME"
-                        ? () {
-                            if (formState.validate()) {
-                              print(formState.formData);
-                            } else {
-                              print("Invalid input");
-                            }
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: ElevatedButton(
+                  onPressed: !formState.hasError &&
+                          formState.currentState != "CHECKING_USERNAME"
+                      ? () {
+                          if (formState.validate()) {
+                            print(formState.formData);
+                          } else {
+                            print("Invalid input");
                           }
-                        : null,
-                    child: Text("Submit"),
-                  ),
+                        }
+                      : null,
+                  child: Text("Submit"),
                 ),
-              ],
-            );
-          },
-          fields: {
-            "full_name": FieldData(rules: "required|min_length:4"),
-            "email": FieldData(rules: "required|email"),
-            "password": FieldData(
-              rules: "required|min_length:6|max_length:16|strong",
-              messages: {
-                "strong": CustomHandler(
-                  onHandle: (payload, _) {
-                    String p =
-                        r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
-                    return payload != null && RegExp(p).hasMatch(payload)
-                        ? null
-                        : "Uppercase, Lowercase, Number and Symbles.";
-                  },
-                ),
-              },
-            ),
-            "username": FieldData(rules: "required|min_length:4"),
-          }),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 

@@ -5,8 +5,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class InputValidator {
+  /// Get errors in a `List<String>[]` or `false` for first error as `String`,
+  /// default is `false`.
   final bool multiErrors;
-  final dynamic? value;
+
+  /// The given payload
+  final dynamic value;
+
+  /// Validation rules
   final String? rules;
 
   /// initial error messages
@@ -14,7 +20,6 @@ class InputValidator {
     "required": "This field is required.",
     "min": "Provide at least :value.",
     "max": "Maximum limit is :value.",
-    "between": "Out of range.",
     "numeric": "Invalid number input.",
     "size": "The size should be :value",
     "length": "The input should be :value characters.",
@@ -30,31 +35,42 @@ class InputValidator {
     "date_after_inlclusive": "Provide newer date.",
   };
 
-  /// helpers
-  bool _isNull(dynamic? payload) => payload == null;
-  double? _toNumeric(dynamic? payload) => double.tryParse("$payload");
-  DateTime? _toDate(dynamic? payload) => DateTime.tryParse("$payload");
-  String _toString(dynamic? payload) => !_isNull(payload) ? "$payload" : "";
+  /// Check the given [payload] is `null`
+  bool _isNull(dynamic payload) => payload == null;
 
+  /// Convert the payload to `numeric` value
+  double? _toNumeric(dynamic payload) => double.tryParse("$payload");
+
+  /// Convert the payload to `DateTime` if possible
+  DateTime? _toDate(dynamic payload) => DateTime.tryParse("$payload");
+
+  /// Convert the payload to `String` value
+  String _toString(dynamic payload) => !_isNull(payload) ? "$payload" : "";
+
+  /// Check the [base] date is newer then [payload]
   bool _baseDateIsBigger(DateTime? base, DateTime? payload) {
     return base != null &&
         payload != null &&
         base.difference(payload).inMilliseconds > 0;
   }
 
+  /// Check the [base] date is older then [payload]
   bool _baseDateIsSmaller(DateTime? base, DateTime? payload) {
     return base != null &&
         payload != null &&
         base.difference(payload).inMilliseconds < 0;
   }
 
+  /// Check the [base] date is equal to [payload]
   bool _dateEqual(DateTime? base, DateTime? payload) {
     return base != null &&
         payload != null &&
         base.difference(payload).inDays == 0;
   }
 
-  String? _getMsg(String key, {dynamic? replace}) {
+  /// Get the message from defined `_errorMessages` by [key]
+  /// and replace corresponding value.
+  String? _getMsg(String key, {dynamic replace}) {
     return _errorMessages.containsKey(key)
         ? _errorMessages[key]
             ?.replaceFirst(RegExp(":value"), _toString(replace))
@@ -66,7 +82,7 @@ class InputValidator {
   String? _required() =>
       _toString(value).isNotEmpty ? null : _getMsg("required");
 
-  /// check minimum
+  /// check `value` is equal or greter then [min] value
   String? _min(dynamic min) {
     double? val = _toNumeric(value);
     double? m = _toNumeric(min);
@@ -76,7 +92,7 @@ class InputValidator {
         : _getMsg("min", replace: min);
   }
 
-  /// check maximum
+  /// check `value` is equal or smaller then [max] value
   String? _max(dynamic max) {
     double? val = _toNumeric(value);
     double? m = _toNumeric(max);
@@ -97,7 +113,7 @@ class InputValidator {
   ///
   String? _length(dynamic length) {
     String val = _toString(value);
-    dynamic? l = _toNumeric(length);
+    dynamic l = _toNumeric(length);
 
     return val.isNotEmpty && l == val.length
         ? null
@@ -107,7 +123,7 @@ class InputValidator {
   ///
   String? _minLength(dynamic length) {
     String val = _toString(value);
-    dynamic? l = _toNumeric(length);
+    dynamic l = _toNumeric(length);
 
     return val.isNotEmpty && l <= val.length
         ? null
@@ -117,7 +133,7 @@ class InputValidator {
   ///
   String? _maxLength(dynamic length) {
     String val = _toString(value);
-    dynamic? l = _toNumeric(length);
+    dynamic l = _toNumeric(length);
 
     return val.isNotEmpty && l >= val.length
         ? null
@@ -276,7 +292,8 @@ class InputValidator {
     return [];
   }
 
-  dynamic? validate() {
+  /// validate the rules
+  dynamic validate() {
     var messages = _validator();
     return multiErrors
         ? messages
@@ -285,7 +302,8 @@ class InputValidator {
             : null;
   }
 
-  static dynamic? make({
+  /// validate a field with given rules
+  static dynamic make({
     String? rules,
     required value,
     Map<String, dynamic>? messages,
@@ -301,22 +319,46 @@ class InputValidator {
     return initiate.validate();
   }
 
-  static Widget form({
-    required BuildContext context,
-    required Widget Function(_FormState) child,
-    required Map<String, FieldData> fields,
-  }) {
+  /// init the form fields with rules
+  ///
+  /// ```dart
+  /// var _form = InputValidator.builder(fields: {
+  ///   "phone": FieldData(rules: 'required|min_length:8', error: "Please fill it."),
+  ///   "name": FieldData(rules: 'required|min_length:4'),
+  /// });
+  /// Container(child: _form.build(context, child:(_state) => .....))
+  /// ```
+  static _Builder builder({required Map<String, FieldData> fields}) {
     final _FormState _formState = _FormState(data: fields);
 
+    return _Builder(_formState);
+  }
+
+  /// end of the class
+}
+
+class _Builder {
+  final _FormState _state;
+
+  _Builder(this._state);
+
+  /// Build the form
+  Widget build(
+    BuildContext context, {
+    required Widget Function(_FormState) child,
+  }) {
     return StreamBuilder(
-      stream: _formState.stream,
-      builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
-        return child(_formState);
+      stream: _state.stream,
+      builder: (BuildContext context, _) {
+        return child(_state);
       },
     );
   }
 
-  /// end of the class
+  /// dispose the form stream
+  dispose() {
+    _state.dispose();
+  }
 }
 
 class _FormState {
@@ -326,27 +368,38 @@ class _FormState {
 
   _FormState({required this.data});
 
+  /// stream of the form
   Stream<dynamic> get stream => _controller.stream;
 
+  /// custom state of the form
   String get currentState => _state;
 
+  /// currently added any error or all error fields are null
   bool get hasError =>
       data.values.map((e) => e.error).whereType<String>().isNotEmpty;
 
+  /// if all fields are satisfy the rules then return true or false
+  bool get isValid =>
+      data.keys.map((e) => checkField(e)).whereType<String>().isEmpty;
+
+  /// get data of the field
   Map<String, dynamic> get formData =>
       data.map((key, d) => MapEntry(key, d.value));
 
+  /// set custom state
   set setState(String value) {
     _state = value;
     _controller.sink.add("listen");
   }
 
+  /// add data to the field
+  /// and return true if the data match the rules
   bool add(String field, dynamic value) {
     if (data.containsKey(field)) {
       var item = data[field];
       if (item != null) {
-        item.setValue = value;
-        item.setError = InputValidator.make(
+        item.value = value;
+        item.error = InputValidator.make(
           rules: item.rules,
           messages: item.messages,
           value: value,
@@ -361,6 +414,7 @@ class _FormState {
     return false;
   }
 
+  /// get the error of a field
   String? getError(String field) {
     if (data.containsKey(field)) {
       var item = data[field];
@@ -369,13 +423,16 @@ class _FormState {
     return null;
   }
 
+  /// explicitly set error to any field
   void setError(String field, String? error) {
     if (data.containsKey(field)) {
       var item = data[field];
-      item?.setError = error;
+      item?.error = error;
     }
   }
 
+  /// check specific field if there is any error
+  /// if the field dosn't exits then will return `null`
   String? checkField(String field) {
     if (data.containsKey(field)) {
       var item = data[field];
@@ -390,25 +447,31 @@ class _FormState {
     return null;
   }
 
+  /// clear all errors from the UI
   void clearErrors() {
     data.keys.forEach((k) {
       var item = data[k];
-      item?.setError = null;
+      item?.error = null;
     });
     _controller.sink.add("listen");
   }
 
+  /// check all the provided data and corrosponding rules
+  /// if all rules are satisfied the it will clear UI errors
+  /// and return true otherwise it'll update the UI with errors
+  /// and return false
   bool validate() {
     Map<String, FieldData> newData = data.map((k, v) {
       var error = checkField(k);
       return MapEntry(
-          k,
-          FieldData(
-            value: v.value,
-            rules: v.rules,
-            error: error,
-            messages: v.messages,
-          ));
+        k,
+        FieldData(
+          value: v.value,
+          rules: v.rules,
+          error: error,
+          messages: v.messages,
+        ),
+      );
     });
 
     bool isValid =
@@ -423,6 +486,8 @@ class _FormState {
     return isValid;
   }
 
+  /// Building form via builder create a stream instence
+  /// make sure that you close the stream instence
   dispose() {
     _controller.close();
   }
@@ -431,13 +496,26 @@ class _FormState {
 class FieldData {
   final String? rules;
   final Map<String, dynamic>? messages;
-  dynamic? value;
+  dynamic value;
   String? error;
 
-  set setError(String? err) => error = err;
-  set setValue(dynamic? val) => value = val;
-
-  FieldData({this.error, this.messages, required this.rules, this.value});
+  /// [rules] - Provide valid rules,
+  /// [value] - Initail value of the field,
+  /// [messages] - Custom messages,
+  /// [error] - Initial error of the field
+  ///
+  /// ```dart
+  /// const fields = {
+  ///  "age": FieldData(rules: 'required|min:18', vlaue: 19),
+  ///  "phone": FieldData(rules: 'required|min_length:8', error: "Please fill it."),
+  /// }
+  /// ```
+  FieldData({
+    required this.rules,
+    this.value,
+    this.messages,
+    this.error,
+  });
 
   @override
   String toString() {
@@ -446,6 +524,17 @@ class FieldData {
 }
 
 class CustomHandler {
-  final String? Function(dynamic? payload, List<String> params) onHandle;
+  /// [payload] - the input value
+  /// [params] - the rules params (if provided any)
+  ///
+  /// ```dart
+  /// /// "required|in:1,2,3"
+  /// onHandle(payload, params){
+  ///   print(payload); /// will print the input
+  ///   print(params) /// [1,2,3]
+  ///   return null;
+  /// }
+  /// ```
+  final String? Function(dynamic payload, List<String> params) onHandle;
   CustomHandler({required this.onHandle});
 }
